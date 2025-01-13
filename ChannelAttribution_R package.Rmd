@@ -1,0 +1,239 @@
+---
+title: "ChannelAttribution_R package"
+author: "Chaima Boughanmi"
+date: "2024-04-30"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+Cette base de données a suivi les parcours des clients du **1er juillet 2018** au **31 juillet 2018** et a enregistré en détail le moment où chaque publicité s'est affichée, quel client elle a atteint et si le client a réussi à se convertir.
+
+Par exemple, pour le premier cookie, son parcours comprend quatre états : Instagram \> Online Display \> Onlin Display \> Online Display. Malheureusement, l'utilisateur n'a pas converti pendant la période observée, et donc la conversion et la valeur de conversion sont toutes deux égales à 0.
+
+```{r}
+# Charger les données
+df <- read.csv("L:/ExpandedBM/Attribution Models/attribution data.csv")
+
+# Trier les données par 'cookie' et 'time' ==> Ordre croissant
+df <- df[order(df$cookie, df$time), ]
+```
+
+```{r}
+library(kableExtra)
+head(df) %>% kable() %>%
+           kable_styling(bootstrap_options = "striped",
+                         full_width = F, 
+                         position="center")
+```
+
+-   **cookie:** used for identifying unique customers time
+
+-   **interaction:** "impression" or "conversion".
+
+-   **conversion:** 0 or 1
+
+-   **conversion_value:** how much values a consumer brings about after conversion
+
+-   **channel:** including "Facebook", "Instagram", "Online Display", "Online Video", and "Paid Search"
+
+## Preprocessing
+
+Afin d'appliquer le modèle de **chaîne de Markov**, nous devons transformer nos données et créer une variable* de chemin **path** comme dans notre exemple précédent. Ici, j'ai utilisé data.table pour traiter nos données car il peut traiter les données beaucoup plus rapidement que data.frame.
+
+```{r}
+library(lubridate)
+```
+
+```{r}
+library(stringr)
+library(data.table)
+
+library(data.table)
+
+# Convertir le data frame en un objet data.table
+setDT(df)
+
+# Appliquer les opérations sur les colonnes
+df = df[order(cookie, time),time:=ymd_hms(time)][,id := seq_len(.N), by = cookie]
+```
+
+
+```{r}
+dt_wide = dcast(data = df, formula = cookie ~ id, value.var = "channel")
+dt_wide = dt_wide[, path:=do.call(paste,c(.SD, sep=' > ')), .SDcols=-1]
+dt_wide = dt_wide[, path:=word(path, 1, sep = " > NA")]
+
+conversion = df[, .(conversion=sum(conversion), conversion_value=sum(conversion_value)), by=cookie]
+
+setkey(conversion, cookie)
+setkey(dt_wide, cookie)
+
+dt_wide = merge(dt_wide, conversion)
+
+dt_WIDE= dt_wide[, .(path, conversion, conversion_value)]
+
+head(dt_WIDE) %>%
+           kable() %>%
+           kable_styling(bootstrap_options = "striped",
+                         full_width = F, 
+                         position="center")
+
+```
+
+## Markov Chain Modeling
+R dispose d'un excellent package conçu pour l'attribution des canaux, appelé **ChannelAttribution**. Il peut être utilisé pour construire des modèles basés sur des approches heuristiques et markoviennes, respectivement. Pour évaluer les résultats de la chaîne de Markov, j'exécute simultanément des modèles heuristiques et je les considère comme des modèles de base.
+
+```{r}
+library(ChannelAttribution)
+# Apply models
+H = heuristic_models(Data = dt_wide, 
+                     var_path = 'path', 
+                     var_conv = 'conversion', 
+                     var_value='conversion_value', 
+                     sep='>')
+
+M = markov_model(Data = dt_wide, 
+                     var_path = 'path', 
+                     var_conv = 'conversion', 
+                     var_value='conversion_value', 
+                     sep='>', 
+                     order=3, 
+                     out_more=TRUE)
+
+```
+```{r}
+M$result %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped",
+                full_width = F, 
+                position="center")
+```
+
+```{r}
+H %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped",
+                full_width = F, 
+                position="center")
+```
+
+```{r}
+M$transition_matrix %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped",
+                full_width = F, 
+                position="center")
+```
+
+
+```{r}
+library(dplyr)
+
+# Remplacement des valeurs dans channel_from
+M$transition_matrix %>%
+  mutate(channel_from = recode(channel_from,
+                                "1" = "Instagram",
+                                "2" = "Online Display",
+                                "3" = "Paid Search",
+                                "4" = "Facebook",
+                                "5" = "Online Video"))
+
+# Remplacement des valeurs dans channel_to
+M$transition_matrix %>%
+  mutate(channel_to = recode(channel_to,
+                              "1" = "Instagram",
+                              "2" = "Online Display",
+                              "3" = "Paid Search",
+                              "4" = "Facebook",
+                              "5" = "Online Video"))
+```
+
+
+```{r}
+# Création d'un vecteur avec les correspondances entre les chiffres et les chaînes de caractères
+correspondances <- c("Instagram", "Online Display", "Paid Search", "Facebook", "Online Video")
+
+# Fonction pour effectuer le remplacement des chiffres par les chaînes de caractères correspondantes
+remplacer_chiffres <- function(valeur) {
+  # Initialisation de la chaîne résultante
+  resultat <- ""
+  
+  # Séparation de la chaîne en vecteur de caractères
+  caracteres <- strsplit(valeur, " ")[[1]]
+  
+  # Parcours des caractères
+  for (caractere in caracteres) {
+    # Vérification si le caractère est un chiffre
+    if (grepl("[0-9]", caractere)) {
+      # Remplacement du chiffre par sa correspondance
+      resultat <- paste0(resultat, correspondances[as.numeric(caractere)], " ")
+    } else {
+      # Ajout du caractère tel quel
+      resultat <- paste0(resultat, caractere, " ")
+    }
+  }
+  
+  # Retour du résultat en supprimant l'espace final
+  return(trimws(resultat))
+}
+
+# Application de la fonction sur les colonnes à traiter
+k=M$transition_matrix
+k$channel_from <- sapply(k$channel_from, remplacer_chiffres)
+k$channel_to <- sapply(k$channel_to, remplacer_chiffres)
+```
+
+
+```{r}
+head(k)
+```
+
+```{r}
+M$removal_effects %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped",
+                full_width = F, 
+                position="center")
+```
+## Automatic Markov chain : 
+
+
+```{r}
+# test= auto_markov_model(Data = dt_wide, var_path = 'path', var_conv = 'conversion', var_null= , var_value='conversion_value',
+#              max_order=10, roc_npt=100, plot=TRUE, nsim_start=1e5, 
+#              max_step=NULL, out_more=TRUE, sep=">", 
+#              ncore=1, nfold=10, seed=0, conv_par=0.05, rate_step_sim=1.5, 
+#              verbose=TRUE, flg_adv=TRUE)
+```
+
+```{r}
+# # transition matrix heatmap for "real" data
+# df_plot_trans <- k
+# cols <- c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e", "#eec73a",
+# "#e29421", "#e29421", "#f05336", "#ce472e")
+# t <- max(df_plot_trans$transition_probability)
+```
+
+
+```{r}
+# ggplot(df_plot_trans, aes(y = channel_from, x = channel_to, fill = transition_probability)) +
+# theme_minimal() +
+# geom_tile(colour = "white", width = .9, height = .9) +
+# scale_fill_gradientn(colours = cols, limits = c(0, t),
+# breaks = seq(0, t, by = t/4),
+# labels = c("0", round(t/4*1, 2), round(t/4*2, 2), round(t/4*3, 2), round(t/4*4, 2)),
+# guide = guide_colourbar(ticks = T, nbin = 50, barheight = .5, label = T, barwidth = 10)) +
+# geom_text(aes(label = round(transition_probability, 2)), fontface = "bold", size = 4) +
+# theme(legend.position = 'bottom',
+# legend.direction = "horizontal",
+# panel.grid.major = element_blank(),
+# panel.grid.minor = element_blank(),
+# plot.title = element_text(size = 20, face = "bold", vjust = 2, color = 'black', lineheight = 0.8),
+# axis.title.x = element_text(size = 24, face = "bold"),
+# axis.title.y = element_text(size = 24, face = "bold"),
+# axis.text.y = element_text(size = 8, face = "bold", color = 'black'),
+# axis.text.x = element_text(size = 8, angle = 90, hjust = 0.5, vjust = 0.5, face = "plain")) +
+# ggtitle("Transition matrix heatmap")
+```
+
