@@ -16,7 +16,7 @@ library(pROC)
 library(kableExtra)
 
 # Charger les données
-df <- read.csv("L:/ExpandedBM/Attribution Models/attribution data.csv")
+df <- read.csv("path/attribution data.csv")
 
 # Trier les données par 'cookie' et 'time' ==> Ordre croissant
 df <- df[order(df$cookie, df$time), ]
@@ -222,7 +222,7 @@ print(paste("Prédiction pour le chemin:", path_example, "=> Conversion prédite
 
 
 # Charger les données
-df <- read.csv("L:/ExpandedBM/Attribution Models/attribution data.csv")
+df <- read.csv("path/attribution data.csv")
 
 # Trier les données par 'cookie' et 'time' ==> Ordre croissant
 df <- df[order(df$cookie, df$time), ]
@@ -339,7 +339,7 @@ auc(roc_curve)
 ################   OVER SAMPLNG (ROSE) !!!!!!!!!!!!!
 
 # Charger les données
-df <- read.csv("L:/ExpandedBM/Attribution Models/attribution data.csv")
+df <- read.csv("path/attribution data.csv")
 
 # Trier les données par 'cookie' et 'time' ==> Ordre croissant
 df <- df[order(df$cookie, df$time), ]
@@ -527,7 +527,7 @@ library(pROC)
 
 
 # Charger les données
-df <- read.csv("L:/ExpandedBM/Attribution Models/attribution data.csv")
+df <- read.csv("path/attribution data.csv")
 
 # Trier les données par 'cookie' et 'time' ==> Ordre croissant
 df <- df[order(df$cookie, df$time), ]
@@ -650,7 +650,7 @@ xgb_model <- train(
 ################################### XGBoost avec Feature engineering :::::::
 
 # Charger les données
-df <- read.csv("L:/ExpandedBM/Attribution Models/attribution data.csv")
+df <- read.csv("path/attribution data.csv")
 
 # Trier les données par 'cookie' et 'time' ==> Ordre croissant
 df <- df[order(df$cookie, df$time), ]
