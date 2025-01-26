@@ -15,6 +15,10 @@ comme dans notre exemple précédent. Ici, j’ai utilisé data.table pour trait
 
 ## Markov Chain Modeling
 R dispose d’un excellent package conçu pour l’attribution des canaux, appelé __ChannelAttribution__.
-Il peut être utilisé pour construire des modèles basés sur des approches heuristiques et markoviennes, respectivement. Pour évaluer les résultats de la chaîne de Markov, j’exécute simultanément des modèles heuristiques et je les considère comme des modèles de base.
+Il peut être utilisé pour construire des modèles basés sur des approches heuristiques et markoviennes, respectivement. Pour évaluer les résultats de la chaîne de Markov, j’exécute simultanément des modèles heuristiques et je les considère comme des modèles de base. <br/>
 
-![](https://github.com/BOUGHANMIChaima/Attributions-Models/blob/main/transition_proba.png)
+!()[https://github.com/BOUGHANMIChaima/Attributions-Models/blob/main/attribution__.png] <br/>
+<br/>
+Les résultats de l'implémentation : <br/>
+<br/>
+![](https://github.com/BOUGHANMIChaima/Attributions-Models/blob/main/transition_proba.png) <br/>
