@@ -6,3 +6,7 @@ Cette base de données a suivi les parcours des clients du **1er juillet 2018** 
 Par exemple, pour le premier cookie, son parcours comprend quatre états : Instagram \> Online Display \> Onlin Display \> Online Display. Malheureusement, l'utilisateur n'a pas converti pendant la période observée, et donc la conversion et la valeur de conversion sont toutes deux égales à 0.
 
 ![apperçu Data](https://github.com/BOUGHANMIChaima/Attributions-Models/blob/main/data__.png)
+
+## Preprocessing
+Afin d’appliquer le modèle de chaîne de Markov, nous devons transformer nos données et créer une variable de chemin __path__
+comme dans notre exemple précédent. Ici, j’ai utilisé data.table pour traiter nos données car il peut traiter les données beaucoup plus rapidement que data.frame.
