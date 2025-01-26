@@ -1,4 +1,4 @@
-# Attributions-Models
+# Attributions Models using Markov Chains
 
 ## Data
 Cette base de données a suivi les parcours des clients du **1er juillet 2018** au **31 juillet 2018** et a enregistré en détail le moment où chaque publicité s'est affichée, quel client elle a atteint et si le client a réussi à se convertir.
