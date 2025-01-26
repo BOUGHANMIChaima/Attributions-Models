@@ -13,7 +13,7 @@ Par exemple, pour le premier cookie, son parcours comprend quatre états : Insta
 
 ```{r}
 # Charger les données
-df <- read.csv("L:/ExpandedBM/Attribution Models/attribution data.csv")
+df <- read.csv("path/attribution data.csv")
 
 # Trier les données par 'cookie' et 'time' ==> Ordre croissant
 df <- df[order(df$cookie, df$time), ]
